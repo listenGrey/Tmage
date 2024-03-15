@@ -1,7 +1,9 @@
 package logic
 
 import (
+	"Tmage/controller/status"
 	"Tmage/models"
+	"Tmage/util"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -15,21 +17,16 @@ func encryptPwd(pwdByte []byte) (res string) {
 }
 
 func Register(client *models.RegisterFrom) (err error) {
-	//call is gRpc client
+	//call is grpc client
 	// 1. Judging client exist
-	// gRpc server return a existence flag
-	tempUser := models.RegisterFrom{
-		UserName:   "",
-		Email:      "",
-		Password:   "",
-		RePassword: "",
-	}
-	exist := false
-	if client.UserName == tempUser.UserName && client.Email == tempUser.Email && client.Password == tempUser.Password && client.RePassword == tempUser.RePassword {
-		exist = true
-	}
-	if exist {
-		return errors.New("用户已存在")
+	// grpc server return a existence flag
+	//infoCode
+
+	existence := util.CheckExistence(client.Email)
+	if existence == status.StatusSuccess {
+		return errors.New(status.StatusSuccess.Msg())
+	} else if existence == status.StatusBusy {
+		return errors.New(status.StatusBusy.Msg())
 	}
 
 	// 2. generate ID and encrypt password
@@ -49,9 +46,9 @@ func Register(client *models.RegisterFrom) (err error) {
 		Password: userPwd,
 	}
 
-	return fmt.Errorf("register success, ID: %d,email: %s,username: %s,password: %s", user.UserID, user.Email, user.UserName, user.Password)
+	// 3. call a grpc client, send user info
 
-	// 3. call a gRpc client, send user info
+	return fmt.Errorf("register success, ID: %d,email: %s,username: %s,password: %s", user.UserID, user.Email, user.UserName, user.Password)
 }
 
 /*
@@ -61,7 +58,7 @@ func Login(form *models.LoginForm) (atoken, rtoken string, err error) {
 		Password: form.Password,
 	}
 
-	// call a gRpc client, send user info
+	// call a grpc client, send user info
 	if err := err != nil {
 
 	}
