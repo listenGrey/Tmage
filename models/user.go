@@ -22,7 +22,7 @@ func (r *RegisterFrom) UnmarshalJSON(data []byte) (err error) {
 	err = json.Unmarshal(data, &required)
 
 	if err != nil {
-		return err
+		return
 	} else if len(required.UserName) < 1 {
 		err = errors.New("用户名不能为空")
 	} else if len(required.Email) == 0 {
@@ -42,34 +42,42 @@ func (r *RegisterFrom) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
-type User struct {
-	UserID   int64  `json:"user_id" bson:"user_id"`
-	UserName string `json:"user_name" bson:"user_name"`
-	Password string `json:"password" bson:"password"`
-	Email    string `json:"email" bson:"email"`
-}
-
-func (u *User) UnmarshalJSON(data []byte) (err error) {
-	required := struct {
-		Email    string `json:"email" bson:"email"`
-		Password string `json:"password" bson:"password"`
-	}{}
-	err = json.Unmarshal(data, &required)
-
-	if err != nil { //other errors should handle ...
-		return err
-	} else {
-		u.Email = required.Email
-		u.Password = required.Password
-	}
-	return
-}
-
 type LoginForm struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-func (f *LoginForm) UnmarshalJSON() {
+type User struct {
+	UserID       int64  `json:"user_id" bson:"user_id"`
+	UserName     string `json:"user_name" bson:"user_name"`
+	Password     string `json:"password" bson:"password"`
+	Email        string `json:"email" bson:"email"`
+	AccessToken  string
+	RefreshToken string
+}
 
+func (u *User) UnmarshalJSON(data []byte) (err error) {
+	required := struct {
+		UserName string `json:"user_name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{}
+	err = json.Unmarshal(data, &required)
+
+	if err != nil {
+		return
+	} else if len(required.UserName) < 1 {
+		err = errors.New("用户名不能为空")
+	} else if len(required.Email) == 0 {
+		err = errors.New("邮箱不能为空")
+	} else if len(required.Password) < 8 {
+		err = errors.New("密码至少为8位")
+	} else if len(required.Password) > 16 {
+		err = errors.New("密码最多为16位")
+	} else {
+		u.UserName = required.UserName
+		u.Email = required.Email
+		u.Password = required.Password
+	}
+	return
 }

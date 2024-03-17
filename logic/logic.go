@@ -3,11 +3,11 @@ package logic
 import (
 	"Tmage/controller/status"
 	"Tmage/models"
+	"Tmage/pkg/jwt"
 	"Tmage/util"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/bwmarrin/snowflake"
 )
 
@@ -17,28 +17,22 @@ func encryptPwd(pwdByte []byte) (res string) {
 }
 
 func Register(client *models.RegisterFrom) (err error) {
-	//call is grpc client
-	// 1. Judging client exist
-	// grpc server return a existence flag
-	//infoCode
-
+	// 1. 将注册邮箱通过gRpc发送到gRpc服务器去判断用户是否存在
 	existence := util.CheckExistence(client.Email)
-	if existence == status.StatusSuccess {
-		return errors.New(status.StatusSuccess.Msg())
-	} else if existence == status.StatusBusy {
-		return errors.New(status.StatusBusy.Msg())
+	if existence != status.StatusSuccess {
+		return errors.New(existence.Msg())
 	}
 
-	// 2. generate ID and encrypt password
+	// 2. 生成ID，对密码加密
 	node, err := snowflake.NewNode(1)
 	if err != nil {
-		return err
+		return errors.New(status.StatusInvalidGenID.Msg())
 	}
 	userId := node.Generate()
 	pwdByte := []byte(client.Password)
 	userPwd := encryptPwd(pwdByte)
 
-	//create a user
+	// 创建一个用户
 	user := &models.User{
 		UserID:   userId.Int64(),
 		Email:    client.Email,
@@ -47,23 +41,36 @@ func Register(client *models.RegisterFrom) (err error) {
 	}
 
 	// 3. call a grpc client, send user info
-
-	return fmt.Errorf("register success, ID: %d,email: %s,username: %s,password: %s", user.UserID, user.Email, user.UserName, user.Password)
+	res := util.Register(user)
+	if res != status.StatusSuccess {
+		return errors.New(res.Msg())
+	}
+	return nil
 }
 
-/*
-func Login(form *models.LoginForm) (atoken, rtoken string, err error) {
-	user := &models.User{
+func Login(form *models.LoginForm) (user *models.User, err error) {
+	// 对密码加密
+	pwdByte := []byte(form.Password)
+	userPwd := encryptPwd(pwdByte)
+
+	user = &models.User{
 		Email:    form.Email,
-		Password: form.Password,
+		Password: userPwd,
 	}
 
-	// call a grpc client, send user info
-	if err := err != nil {
-
+	// 将登录信息通过gRpc发送到gRpc服务器去判断用户和密码是否正确
+	info, userID := util.LoginCheck(user)
+	if info != status.StatusSuccess {
+		return nil, errors.New(info.Msg())
 	}
+	user.UserID = userID
 
 	// 生成JWT
-	return "", "", err
+	aToken, rToken, err := jwt.GenToken(user.UserID)
+	if err != nil {
+		return
+	}
+	user.AccessToken = aToken
+	user.RefreshToken = rToken
+	return
 }
-*/
