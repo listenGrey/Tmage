@@ -20,6 +20,6 @@ func ResponseErrorWithMsg(c *gin.Context, code status.Code) {
 
 func ResponseSuccess(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"msg": status.StatusSuccess,
+		"msg": status.StatusSuccess.Msg(),
 	})
 }

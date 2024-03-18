@@ -20,6 +20,11 @@ const (
 
 	StatusConnGrpcServerErr  Code = 1200
 	StatusRecvGrpcSerInfoErr Code = 1201
+	StatusConnDBErr          Code = 1202
+
+	StatusImagesNotFound Code = 1300
+	StatusNoTag          Code = 1301
+
 	//...
 )
 
@@ -39,6 +44,10 @@ var msgFlags = map[Code]string{
 
 	StatusConnGrpcServerErr:  "无法连接到gRpc服务器",
 	StatusRecvGrpcSerInfoErr: "从gRpc服务器获取信息失败",
+	StatusConnDBErr:          "无法连接到数据库",
+
+	StatusImagesNotFound: "没有找到图片",
+	StatusNoTag:          "没有标签",
 	//...
 }
 

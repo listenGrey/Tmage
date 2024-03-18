@@ -4,9 +4,12 @@ import (
 	"Tmage/controller/status"
 	"Tmage/logic"
 	"Tmage/models"
+	"Tmage/pkg/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
+	"net/http"
+	"strings"
 )
 
 func RegisterHandler(c *gin.Context) {
@@ -60,10 +63,26 @@ func LoginHandler(c *gin.Context) {
 	ResponseSuccess(c)
 }
 
-/*
 func RefreshTokenHandler(c *gin.Context) {
+	rt := c.Query("refresh_token")
 
+	authHeader := c.Request.Header.Get("Authorization")
+	if authHeader == "" {
+		ResponseErrorWithMsg(c, status.StatusInvalidToken)
+		c.Abort()
+		return
+	}
+	// 按空格分割
+	parts := strings.SplitN(authHeader, " ", 2)
+	if !(len(parts) == 2 && parts[0] == "Bearer") {
+		ResponseErrorWithMsg(c, status.StatusInvalidToken)
+		c.Abort()
+		return
+	}
+	aToken, rToken, err := jwt.RefreshToken(parts[1], rt)
+	zap.L().Error("jwt.RefreshToken failed", zap.Error(err))
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  aToken,
+		"refresh_token": rToken,
+	})
 }
-func JWTAuthMiddleWare(c *gin.Context) {
-
-}*/
