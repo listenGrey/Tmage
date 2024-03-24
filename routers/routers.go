@@ -9,6 +9,7 @@ import (
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
+	// 设置单张图片最大为32MB r.MaxMultipartMemory 默认为32MB
 	v1 := r.Group("/api/v1")
 	v1.POST("/register", controller.RegisterHandler)
 	v1.POST("/login", controller.LoginHandler)

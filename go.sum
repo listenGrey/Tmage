@@ -52,6 +52,8 @@ github.com/listenGrey/TmagegRpcPKG v0.0.5 h1:lHU+ys29qyKPQv+D47ofJ7Q7JlXDB9T/s3K
 github.com/listenGrey/TmagegRpcPKG v0.0.5/go.mod h1:cXAT+AYtdq7SxsyWul5XoSbFHOuqweRUR39ihXFelWQ=
 github.com/listenGrey/TmagegRpcPKG v0.0.6 h1:GRnNXG2ABeJ7G6OlcDezYTizOyZfIxIKXX37lIKC53U=
 github.com/listenGrey/TmagegRpcPKG v0.0.6/go.mod h1:cXAT+AYtdq7SxsyWul5XoSbFHOuqweRUR39ihXFelWQ=
+github.com/listenGrey/TmagegRpcPKG v0.0.7 h1:rLyQmN3zdjuUXv65crC4WNB/rn6hmPSkosRpr/hLf5E=
+github.com/listenGrey/TmagegRpcPKG v0.0.7/go.mod h1:cXAT+AYtdq7SxsyWul5XoSbFHOuqweRUR39ihXFelWQ=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
