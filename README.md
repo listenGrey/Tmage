@@ -1,5 +1,5 @@
 # Tmage
-> If you want to read English file, please click *[here]("https://github.com/listenGrey/Tmage/blob/dev/others/enREADME.md")*.
+> If you want to read English file, please click *[here](others%2FenREADME.md)*.
 
 ### 简介
 Tmage是一个基于Web的，分布式图片存储与分享平台，用户可以上传图片，并可以根据标签来快速的搜索出想要的图片。
