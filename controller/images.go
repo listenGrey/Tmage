@@ -1,23 +1,50 @@
 package controller
 
 import (
-	"fmt"
+	"Tmage/controller/status"
+	"Tmage/logic"
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"go.uber.org/zap"
 )
 
 func HomeHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{})
+	ResponseSuccess(c)
 }
 
 func UploadHandler(c *gin.Context) {
 	// Multipart form
-	form, _ := c.MultipartForm()
-	files := form.File["uploads"]
-	for _, file := range files {
-		// 上传文件至指定目录
-		d, x := c.Get(ContextUserIDKey)
-		c.SaveUploadedFile(file, "./"+file.Filename)
+	//接收文件
+	form, err := c.MultipartForm()
+	if err != nil {
+		zap.L().Error("upload files with invalid parameters", zap.Error(err))
+		ResponseErrorWithMsg(c, status.StatusInvalidParams)
+		return
 	}
-	c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+
+	//接收标签
+	var tags []string
+	if err = c.BindJSON(&tags); err != nil {
+		zap.L().Error("upload tags with invalid parameters", zap.Error(err))
+		ResponseErrorWithMsg(c, status.StatusInvalidParams)
+		return
+	}
+
+	//获取当前用户ID
+	userID, err := GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("log in and upload", zap.Error(err))
+		ResponseError(c, err)
+		return
+	}
+
+	//业务处理，上传图片
+	files := form.File["uploads"]
+	err = logic.Upload(files, tags, userID)
+	if err != nil {
+		zap.L().Error("logic.upload failed", zap.Error(err))
+		ResponseError(c, err)
+		return
+	}
+
+	ResponseSuccess(c)
 }
