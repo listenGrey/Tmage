@@ -3,7 +3,7 @@ package util
 import (
 	"Tmage/controller/status"
 	"Tmage/models"
-	"fmt"
+	"encoding/json"
 	"github.com/segmentio/kafka-go"
 	"strconv"
 	"time"
@@ -11,13 +11,12 @@ import (
 	"context"
 )
 
-func Upload(uploadImages []*models.UploadImage) status.Code {
+func Upload(uploadImages []models.UploadImage) status.Code {
 	ctx := context.Background()
-	topic := strconv.FormatInt(uploadImages[0].UserID, 10)
 	// 创建 Kafka 生产者
 	writer := &kafka.Writer{
 		Addr:                   kafka.TCP("localhost:9092"),
-		Topic:                  topic,
+		Topic:                  "upload",
 		Balancer:               &kafka.Hash{},
 		WriteTimeout:           1 * time.Second,
 		RequiredAcks:           kafka.RequireNone,
@@ -27,33 +26,86 @@ func Upload(uploadImages []*models.UploadImage) status.Code {
 	defer writer.Close()
 
 	// 发送消息
-	for i := 0; i < 3; i++ {
+	for _, uploadImage := range uploadImages {
+		sendK := []byte(strconv.Itoa(int(uploadImage.UserID))) // key=id+image name
+		sendK = append(sendK, ' ')
+		sendK = append(sendK, []byte(uploadImage.ImageName)...)
+		sendV, _ := json.Marshal(uploadImage) // value
 		err := writer.WriteMessages(
 			ctx,
 			kafka.Message{
-				Key:   []byte("1"),
-				Value: []byte("l"),
+				Key:   sendK,
+				Value: sendV,
 			},
-			kafka.Message{
-				Key:   []byte("2"),
-				Value: []byte("i"),
-			},
-			kafka.Message{
-				Key:   []byte("3"),
-				Value: []byte("s"),
-			},
-		) // 原子操作，全部成功或全部不成功
+		)
 
 		if err != nil {
-			if err == kafka.LeaderNotAvailable { //第一次写，topic不存在
-				time.Sleep(500 * time.Microsecond)
-				continue
-			} else {
-				fmt.Printf("批量写入失败：%v\n", err)
-			}
-		} else {
-			break
+			return status.StatusKafkaSendERR
 		}
 	}
+	return status.StatusSuccess
+}
 
+func Delete(imageIds []string, userID int64) status.Code {
+	ctx := context.Background()
+	// 创建 Kafka 生产者
+	writer := &kafka.Writer{
+		Addr:                   kafka.TCP("localhost:9092"),
+		Topic:                  "delete",
+		Balancer:               &kafka.Hash{},
+		WriteTimeout:           1 * time.Second,
+		RequiredAcks:           kafka.RequireNone,
+		AllowAutoTopicCreation: true, //实际情况是false
+	}
+
+	// 发送消息
+	sendK := []byte(strconv.Itoa(int(userID))) // key=id
+	var sendV []byte                           // value
+	for k, imageId := range imageIds {
+		image := []byte(imageId)
+		if k != len(imageIds)-1 {
+			image = append(image, ' ')
+		}
+		sendV = append(sendV, image...)
+	}
+	err := writer.WriteMessages(
+		ctx,
+		kafka.Message{
+			Key:   sendK,
+			Value: sendV,
+		},
+	)
+	if err != nil {
+		return status.StatusKafkaSendERR
+	}
+
+	// 接收回复的消息
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:     []string{"localhost:9092"},
+		Topic:       "delete",
+		GroupID:     "producer",
+		StartOffset: kafka.FirstOffset,
+		MaxWait:     10 * time.Millisecond,
+	})
+
+	var info []byte
+	for {
+		msg, err := reader.ReadMessage(ctx)
+		info = msg.Value
+		if err != nil {
+			return status.StatusKafkaReceiveERR
+		}
+	}
+	res, err := strconv.Atoi(string(info))
+	if err != nil {
+		return status.StatusKafkaReceiveERR
+	}
+	writer.Close()
+	reader.Close()
+
+	if res == int(status.StatusSuccess) {
+		return status.StatusSuccess
+	} else {
+		return status.StatusKafkaReceiveERR
+	}
 }

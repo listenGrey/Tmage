@@ -48,3 +48,31 @@ func UploadHandler(c *gin.Context) {
 
 	ResponseSuccess(c)
 }
+
+func DeleteHandler(c *gin.Context) {
+	//接收文件id
+	var imageIds []string
+	if err := c.BindJSON(&imageIds); err != nil {
+		zap.L().Error("delete with invalid parameters", zap.Error(err))
+		ResponseErrorWithMsg(c, status.StatusInvalidParams)
+		return
+	}
+
+	//获取当前用户ID
+	userID, err := GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("log in and delete", zap.Error(err))
+		ResponseError(c, err)
+		return
+	}
+
+	//业务处理，删除图片
+	err = logic.Delete(imageIds, userID)
+	if err != nil {
+		zap.L().Error("logic.delete failed", zap.Error(err))
+		ResponseError(c, err)
+		return
+	}
+
+	ResponseSuccess(c)
+}

@@ -12,19 +12,21 @@ const (
 	StatusInvalidPwd    Code = 1004
 	StatusBusy          Code = 1005
 	StatusInvalidGenID  Code = 1006
-	StatusRegisterErr   Code = 1007
+	StatusRegisterERR   Code = 1007
 
 	StatusInvalidToken      Code = 1100
 	StatusInvalidAuthFormat Code = 1101
 	StatusNotLogin          Code = 1102
 
-	StatusConnGrpcServerErr  Code = 1200
-	StatusRecvGrpcSerInfoErr Code = 1201
-	StatusConnDBErr          Code = 1202
+	StatusConnGrpcServerERR  Code = 1200
+	StatusRecvGrpcSerInfoERR Code = 1201
+	StatusConnDBERR          Code = 1202
 
 	StatusImagesNotFound Code = 1300
 	StatusNoTag          Code = 1301
 
+	StatusKafkaSendERR    Code = 1400
+	StatusKafkaReceiveERR Code = 1401
 	//...
 )
 
@@ -36,18 +38,21 @@ var msgFlags = map[Code]string{
 	StatusInvalidPwd:    "用户名或密码错误",
 	StatusBusy:          "业务繁忙，请稍后重试",
 	StatusInvalidGenID:  "生成ID失败",
-	StatusRegisterErr:   "用户注册失败",
+	StatusRegisterERR:   "用户注册失败",
 
 	StatusInvalidToken:      "无效的Token",
 	StatusInvalidAuthFormat: "认证格式有误",
 	StatusNotLogin:          "未登录",
 
-	StatusConnGrpcServerErr:  "无法连接到gRpc服务器",
-	StatusRecvGrpcSerInfoErr: "从gRpc服务器获取信息失败",
-	StatusConnDBErr:          "无法连接到数据库",
+	StatusConnGrpcServerERR:  "无法连接到gRpc服务器",
+	StatusRecvGrpcSerInfoERR: "从gRpc服务器获取信息失败",
+	StatusConnDBERR:          "无法连接到数据库",
 
 	StatusImagesNotFound: "没有找到图片",
 	StatusNoTag:          "没有标签",
+
+	StatusKafkaSendERR:    "向kafka中发送数据失败",
+	StatusKafkaReceiveERR: "从kafka中获取数据失败",
 	//...
 }
 

@@ -3,8 +3,6 @@ package grpc
 import (
 	"Tmage/controller/status"
 	"fmt"
-	"github.com/listenGrey/TmagegRpcPKG/images"
-
 	"github.com/listenGrey/TmagegRpcPKG/userInfo"
 	"google.golang.org/grpc"
 )
@@ -17,14 +15,13 @@ const (
 	CheckExistence Client = 2000
 	Register       Client = 2001
 	LoginCheck     Client = 2002
-	GetImages      Client = 2003
 )
 
 func ClientServer(funcCode Client) (client interface{}) {
 	conn, err := grpc.Dial("localhost:8964", grpc.WithInsecure()) //server IP
 	if err != nil {
 		fmt.Println("cannot connect grpc server")
-		return status.StatusConnGrpcServerErr
+		return status.StatusConnGrpcServerERR
 	}
 	switch funcCode {
 	case CheckExistence:
@@ -33,8 +30,6 @@ func ClientServer(funcCode Client) (client interface{}) {
 		client = userInfo.NewRegisterInfoClient(conn)
 	case LoginCheck:
 		client = userInfo.NewLoginCheckClient(conn)
-	case GetImages:
-		client = images.NewFileServiceClient(conn)
 	default:
 		client = nil
 	}

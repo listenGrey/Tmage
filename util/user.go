@@ -12,14 +12,14 @@ import (
 
 func CheckExistence(email string) status.Code {
 	client := grpc.ClientServer(grpc.CheckExistence)
-	if client == status.StatusConnGrpcServerErr {
-		return status.StatusConnGrpcServerErr
+	if client == status.StatusConnGrpcServerERR {
+		return status.StatusConnGrpcServerERR
 	}
 	sendEmail := &userInfo.RegisterEmail{Email: email}
 	res, err := client.(userInfo.CheckExistenceClient).RegisterCheck(context.Background(), sendEmail)
 	if err != nil {
 		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
-		return status.StatusRecvGrpcSerInfoErr
+		return status.StatusRecvGrpcSerInfoERR
 	}
 	if exist := res.Exsit; exist {
 		return status.StatusUserExist
@@ -30,8 +30,8 @@ func CheckExistence(email string) status.Code {
 
 func Register(user *models.User) status.Code {
 	client := grpc.ClientServer(grpc.Register)
-	if client == status.StatusConnGrpcServerErr {
-		return status.StatusConnGrpcServerErr
+	if client == status.StatusConnGrpcServerERR {
+		return status.StatusConnGrpcServerERR
 	}
 	sendUser := &userInfo.RegisterForm{
 		UserID:   user.UserID,
@@ -42,19 +42,19 @@ func Register(user *models.User) status.Code {
 	res, err := client.(userInfo.RegisterInfoClient).Register(context.Background(), sendUser)
 	if err != nil {
 		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
-		return status.StatusRecvGrpcSerInfoErr
+		return status.StatusRecvGrpcSerInfoERR
 	}
 	if sta := res.Success; sta {
 		return status.StatusSuccess
 	} else {
-		return status.StatusRegisterErr
+		return status.StatusRegisterERR
 	}
 }
 
 func LoginCheck(user *models.User) (code status.Code, userID int64) {
 	client := grpc.ClientServer(grpc.LoginCheck)
-	if client == status.StatusConnGrpcServerErr {
-		return status.StatusConnGrpcServerErr, 0
+	if client == status.StatusConnGrpcServerERR {
+		return status.StatusConnGrpcServerERR, 0
 	}
 	sendUser := &userInfo.LoginForm{
 		Email:    user.Email,
@@ -63,7 +63,7 @@ func LoginCheck(user *models.User) (code status.Code, userID int64) {
 	res, err := client.(userInfo.LoginCheckClient).LoginCheck(context.Background(), sendUser)
 	if err != nil {
 		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
-		return status.StatusRecvGrpcSerInfoErr, 0
+		return status.StatusRecvGrpcSerInfoERR, 0
 	}
 	sta := res.Info
 	userID = res.UserID

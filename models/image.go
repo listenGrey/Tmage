@@ -1,10 +1,10 @@
 package models
 
-import "mime/multipart"
-
 type UploadImage struct {
-	UserID     int64
-	Tags       []string
-	UploadTime string
-	Image      *multipart.FileHeader
+	UserID     int64    `json:"user_id"`
+	Tags       []string `json:"tags"`
+	UploadTime string   `json:"upload_time"`
+	ImageName  string   `json:"image_name"`
+	Size       int64    `json:"size"`
+	Content    []byte   `json:"content"`
 }
