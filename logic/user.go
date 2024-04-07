@@ -7,7 +7,6 @@ import (
 	"Tmage/util"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"github.com/bwmarrin/snowflake"
 )
 
@@ -16,17 +15,17 @@ func encryptPwd(pwdByte []byte) (res string) {
 	return hex.EncodeToString(hashedPassword[:])
 }
 
-func Register(client *models.RegisterFrom) (err error) {
+func Register(client *models.RegisterFrom) status.Code {
 	// 1. 将注册邮箱通过gRpc发送到gRpc服务器去判断用户是否存在
 	existence := util.CheckExistence(client.Email)
 	if existence != status.StatusSuccess {
-		return errors.New(existence.Msg())
+		return existence
 	}
 
 	// 2. 生成ID，对密码加密
 	node, err := snowflake.NewNode(1)
 	if err != nil {
-		return errors.New(status.StatusInvalidGenID.Msg())
+		return status.StatusInvalidGenID
 	}
 	userId := node.Generate()
 	pwdByte := []byte(client.Password)
@@ -43,12 +42,12 @@ func Register(client *models.RegisterFrom) (err error) {
 	// 3. call a grpc client, send user info
 	res := util.Register(user)
 	if res != status.StatusSuccess {
-		return errors.New(res.Msg())
+		return res
 	}
-	return nil
+	return status.StatusSuccess
 }
 
-func Login(form *models.LoginForm) (user *models.User, err error) {
+func Login(form *models.LoginForm) (user *models.User, code status.Code) {
 	// 对密码加密
 	pwdByte := []byte(form.Password)
 	userPwd := encryptPwd(pwdByte)
@@ -61,16 +60,16 @@ func Login(form *models.LoginForm) (user *models.User, err error) {
 	// 将登录信息通过gRpc发送到gRpc服务器去判断用户和密码是否正确
 	info, userID := util.LoginCheck(user)
 	if info != status.StatusSuccess {
-		return nil, errors.New(info.Msg())
+		return nil, info
 	}
 	user.UserID = userID
 
 	// 生成JWT
 	aToken, rToken, err := jwt.GenToken(user.UserID)
 	if err != nil {
-		return
+		return nil, status.StatusBusy
 	}
 	user.AccessToken = aToken
 	user.RefreshToken = rToken
-	return
+	return user, status.StatusSuccess
 }

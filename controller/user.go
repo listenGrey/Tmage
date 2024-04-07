@@ -5,6 +5,8 @@ import (
 	"Tmage/logic"
 	"Tmage/models"
 	"Tmage/pkg/jwt"
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
@@ -18,23 +20,23 @@ func RegisterHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&client); err != nil {
 		zap.L().Error("Register with invalid parameter", zap.Error(err))
 		//判断 err 是否为 validator 类型
-		_, ok := err.(validator.ValidationErrors)
+		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
-			ResponseErrorWithMsg(c, status.StatusInvalidParams) // 请求参数错误
+			ResponseError(c, status.StatusInvalidParams, nil) // 请求参数错误
 			return
 		}
-		ResponseErrorWithMsg(c, status.StatusInvalidParams)
+		ResponseError(c, status.StatusInvalidParams, errs.Translate(trans))
 		// 翻译错误
 		return
 	}
 	// 用户注册
-	if err := logic.Register(client); err != nil {
-		zap.L().Error("logic.Register failed", zap.Error(err))
-		ResponseError(c, err)
+	if code := logic.Register(client); code != status.StatusSuccess {
+		zap.L().Error("logic.Register failed", zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
 		return
 	}
 
-	ResponseSuccess(c)
+	ResponseSuccess(c, nil)
 }
 
 func LoginHandler(c *gin.Context) {
@@ -42,25 +44,30 @@ func LoginHandler(c *gin.Context) {
 	var user *models.LoginForm
 	if err := c.ShouldBindJSON(&user); err != nil {
 		zap.L().Error("log in with invalid parameters", zap.Error(err))
-		_, ok := err.(validator.ValidationErrors)
+		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
-			ResponseError(c, err)
+			ResponseError(c, status.StatusInvalidParams, nil)
 			return
 		}
-		ResponseErrorWithMsg(c, status.StatusInvalidParams)
+		ResponseError(c, status.StatusInvalidParams, errs.Translate(trans))
 		return
 	}
 
 	//业务处理：登录
-	_, err := logic.Login(user)
-	if err != nil {
-		zap.L().Error("logic.login failed", zap.String("user", user.Email), zap.Error(err))
-		ResponseError(c, err)
+	curUser, code := logic.Login(user)
+	if code != status.StatusSuccess {
+		zap.L().Error("logic.login failed", zap.String("user", user.Email), zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
 		return
 	}
 
 	//返回响应
-	ResponseSuccess(c)
+	ResponseSuccess(c, gin.H{
+		"user_id":       fmt.Sprintf("%d", curUser.UserID),
+		"user_name":     curUser.UserName,
+		"access_token":  curUser.AccessToken,
+		"refresh_token": curUser.RefreshToken,
+	})
 }
 
 func RefreshTokenHandler(c *gin.Context) {
@@ -68,14 +75,14 @@ func RefreshTokenHandler(c *gin.Context) {
 
 	authHeader := c.Request.Header.Get("Authorization")
 	if authHeader == "" {
-		ResponseErrorWithMsg(c, status.StatusInvalidToken)
+		ResponseError(c, status.StatusInvalidToken, "请求头缺少Token")
 		c.Abort()
 		return
 	}
 	// 按空格分割
 	parts := strings.SplitN(authHeader, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {
-		ResponseErrorWithMsg(c, status.StatusInvalidToken)
+		ResponseError(c, status.StatusInvalidToken, "Token格式错误")
 		c.Abort()
 		return
 	}

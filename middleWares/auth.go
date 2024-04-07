@@ -15,21 +15,21 @@ func JWTAuthMiddleWare() func(c *gin.Context) {
 		// Token放在Header的Authorization中，使用Bearer开头
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			controller.ResponseErrorWithMsg(c, status.StatusInvalidToken)
+			controller.ResponseError(c, status.StatusInvalidToken, nil)
 			c.Abort()
 			return
 		}
 		// 按空格分割
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			controller.ResponseErrorWithMsg(c, status.StatusInvalidToken)
+			controller.ResponseError(c, status.StatusInvalidToken, nil)
 			c.Abort()
 			return
 		}
 		// 解析Token
 		user, err := jwt.ParseToken(parts[1])
 		if err != nil {
-			controller.ResponseErrorWithMsg(c, status.StatusInvalidToken)
+			controller.ResponseError(c, status.StatusInvalidToken, nil)
 			c.Abort()
 			return
 		}

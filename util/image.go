@@ -103,9 +103,28 @@ func Delete(imageIds []string, userID int64) status.Code {
 	writer.Close()
 	reader.Close()
 
-	if res == int(status.StatusSuccess) {
-		return status.StatusSuccess
-	} else {
+	if res != int(status.StatusSuccess) {
 		return status.StatusKafkaReceiveERR
 	}
+
+	return status.StatusSuccess
+}
+
+func Edit() status.Code {
+	return status.StatusBusy
+
+}
+
+func Download() status.Code {
+	return status.StatusBusy
+
+}
+
+func Share() status.Code {
+	return status.StatusBusy
+
+}
+
+func Search(tags []string, userID int64) (images []models.UploadImage, code status.Code) {
+	return
 }

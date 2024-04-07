@@ -8,3 +8,7 @@ type UploadImage struct {
 	Size       int64    `json:"size"`
 	Content    []byte   `json:"content"`
 }
+
+type FormTags struct {
+	Tags []string `json:"tags"`
+}

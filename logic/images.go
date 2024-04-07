@@ -4,7 +4,8 @@ import (
 	"Tmage/controller/status"
 	"Tmage/models"
 	"Tmage/util"
-	"errors"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"path"
@@ -14,8 +15,19 @@ import (
 
 const fileSize = 50 * 1024 * 1024 //单张图片最大50MB
 
-func Upload(files []*multipart.FileHeader, tags []string, userID int64) (err error) {
+func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info string, code status.Code) {
+	total := len(files)
+	success, failed := 0, 0
 	var uploadImages []models.UploadImage
+
+	// 转换tag类型
+	var formTags models.FormTags
+	err := json.Unmarshal([]byte(tags[0]), &formTags)
+	if err != nil {
+		return "标签为空", status.StatusNoTag
+	}
+	uploadTags := formTags.Tags
+
 	for _, file := range files {
 		// 校验文件类型是否为图片
 		ext := strings.ToLower(path.Ext(file.Filename))
@@ -46,7 +58,7 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (err err
 		// 将符合条件的图片上传
 		uploadImage := &models.UploadImage{
 			UserID:     userID,
-			Tags:       tags,
+			Tags:       uploadTags,
 			UploadTime: now.Format("2006-01-02 15:04:05"),
 			ImageName:  file.Filename,
 			Size:       file.Size,
@@ -56,15 +68,37 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (err err
 	}
 	res := util.Upload(uploadImages)
 	if res != status.StatusSuccess {
-		return errors.New(res.Msg())
+		return "", res
 	}
-	return nil
+	success = len(uploadImages)
+	failed = total - success
+	return fmt.Sprintf("总共上传%d张图片，%d张成功，%d张失败", total, success, failed), status.StatusSuccess
 }
 
-func Delete(imageIds []string, userID int64) (err error) {
-	res := util.Delete(imageIds, userID)
-	if res != status.StatusSuccess {
-		return errors.New(res.Msg())
+func Delete(imageIds []string, userID int64) (code status.Code) {
+	code = util.Delete(imageIds, userID)
+	if code != status.StatusSuccess {
+		return code
 	}
-	return nil
+	return
+}
+
+func Edit() (info string, code status.Code) {
+	return
+}
+
+func Download() (info string, code status.Code) {
+	return
+}
+
+func Share() (info string, code status.Code) {
+	return
+}
+
+func Search(tags []string, userID int64) (images []models.UploadImage, code status.Code) {
+	images, code = util.Search(tags, userID)
+	if code != status.StatusSuccess {
+		return nil, code
+	}
+	return
 }
