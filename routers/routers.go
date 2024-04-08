@@ -21,6 +21,7 @@ func SetupRouter() *gin.Engine {
 	v1.POST("/register", controller.RegisterHandler)
 	v1.POST("/login", controller.LoginHandler)
 	v1.GET("/refresh_token", controller.RefreshTokenHandler)
+	v1.GET("/share/:token", controller.OpenShareHandler) // 打开分享图片,无需登录
 
 	// 中间件
 	v1.Use(middleWares.JWTAuthMiddleWare()) //JWT认证
@@ -33,11 +34,9 @@ func SetupRouter() *gin.Engine {
 		v1.POST("/upload", controller.UploadHandler) // 图片上传
 
 		//util层未完成
-		v1.POST("/delete", controller.DeleteHandler) // 删除图片
-		v1.POST("/search", controller.SearchHandler) // 图片搜索
-
-		//未完成
-		v1.PUT("/images/:id", controller.EditHandler)    // 编辑图片信息
+		v1.POST("/delete", controller.DeleteHandler)     // 删除图片
+		v1.POST("/search", controller.SearchHandler)     // 图片搜索
+		v1.POST("/edit", controller.EditHandler)         // 编辑图片信息
 		v1.POST("/download", controller.DownloadHandler) // 图片下载
 		v1.POST("/share", controller.ShareHandler)       // 分享图片
 

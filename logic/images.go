@@ -4,6 +4,8 @@ import (
 	"Tmage/controller/status"
 	"Tmage/models"
 	"Tmage/util"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -31,6 +33,7 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info st
 	for _, file := range files {
 		// 校验文件类型是否为图片
 		ext := strings.ToLower(path.Ext(file.Filename))
+
 		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
 			continue
 		}
@@ -62,6 +65,7 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info st
 			UploadTime: now.Format("2006-01-02 15:04:05"),
 			ImageName:  file.Filename,
 			Size:       file.Size,
+			Type:       ext[1:],
 			Content:    fileBytes,
 		}
 		uploadImages = append(uploadImages, *uploadImage)
@@ -77,26 +81,52 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info st
 
 func Delete(imageIds []string, userID int64) (code status.Code) {
 	code = util.Delete(imageIds, userID)
-	if code != status.StatusSuccess {
-		return code
+	return
+}
+
+func Edit(image models.ModifyImage, userID int64) (code status.Code) {
+	code = util.Edit(image, userID)
+	return
+}
+
+func Download(imageIds []string, userID int64) (images []models.UploadImage, code status.Code) {
+	images, code = util.Download(imageIds, userID)
+	return
+}
+
+func Share(imageIds []string, userID int64) (url string, code status.Code) {
+	tokenBytes := make([]byte, 32)
+	_, err := rand.Read(tokenBytes)
+	if err != nil {
+		return "", status.StatusBusy
 	}
-	return
-}
 
-func Edit() (info string, code status.Code) {
-	return
-}
+	encodedToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
-func Download() (info string, code status.Code) {
-	return
-}
+	// 分享链接到期时间：14天
+	expirationTime := time.Now().Add(14 * 24 * time.Hour)
 
-func Share() (info string, code status.Code) {
-	return
+	code = util.Share(userID, imageIds, encodedToken, expirationTime)
+	if code != status.StatusSuccess {
+		return "", code
+	}
+
+	// 构建 URL
+	url = fmt.Sprintf("https://tmage.com/share/%s", encodedToken)
+
+	return url, status.StatusSuccess
 }
 
 func Search(tags []string, userID int64) (images []models.UploadImage, code status.Code) {
 	images, code = util.Search(tags, userID)
+	if code != status.StatusSuccess {
+		return nil, code
+	}
+	return
+}
+
+func OpenShare(token string) (images []models.UploadImage, code status.Code) {
+	images, code = util.OpenShare(token)
 	if code != status.StatusSuccess {
 		return nil, code
 	}

@@ -45,7 +45,7 @@ func UploadHandler(c *gin.Context) {
 
 func DeleteHandler(c *gin.Context) {
 	//接收文件id
-	var imageIds []string
+	var imageIds models.FormImageIds
 	if err := c.BindJSON(&imageIds); err != nil {
 		zap.L().Error("delete with invalid parameters", zap.Error(err))
 		ResponseError(c, status.StatusInvalidParams, nil)
@@ -61,7 +61,8 @@ func DeleteHandler(c *gin.Context) {
 	}
 
 	//业务处理，删除图片
-	code := logic.Delete(imageIds, userID)
+	uploadImageIds := imageIds.ImageIds
+	code := logic.Delete(uploadImageIds, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.delete failed", zap.Error(errors.New(code.Msg())))
 		ResponseError(c, code, nil)
@@ -72,22 +73,10 @@ func DeleteHandler(c *gin.Context) {
 }
 
 func EditHandler(c *gin.Context) {
-
-}
-
-func DownloadHandler(c *gin.Context) {
-
-}
-
-func ShareHandler(c *gin.Context) {
-
-}
-
-func SearchHandler(c *gin.Context) {
-	//接收tags
-	var tags models.FormTags
-	if err := c.BindJSON(&tags); err != nil {
-		zap.L().Error("delete with invalid parameters", zap.Error(err))
+	//接收要修改的图片和tags
+	var image models.ModifyImage
+	if err := c.BindJSON(&image); err != nil {
+		zap.L().Error("edit with invalid parameters", zap.Error(err))
 		ResponseError(c, status.StatusInvalidParams, nil)
 		return
 	}
@@ -95,19 +84,128 @@ func SearchHandler(c *gin.Context) {
 	//获取当前用户ID
 	userID, err := GetCurrentUserID(c)
 	if err != nil {
-		zap.L().Error("log in and delete", zap.Error(err))
+		zap.L().Error("log in and edit", zap.Error(err))
 		ResponseError(c, status.StatusNotLogin, nil)
 		return
 	}
 
-	//业务处理，搜索图片
+	//业务处理，编辑图片标签
+	code := logic.Edit(image, userID)
+	if code != status.StatusSuccess {
+		zap.L().Error("logic.edit failed", zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
+		return
+	}
+
+	ResponseSuccess(c, "修改成功")
+}
+
+func DownloadHandler(c *gin.Context) {
+	// 接收文件id
+	var imageIds models.FormImageIds
+	if err := c.BindJSON(&imageIds); err != nil {
+		zap.L().Error("download with invalid parameters", zap.Error(err))
+		ResponseError(c, status.StatusInvalidParams, nil)
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("log in and download", zap.Error(err))
+		ResponseError(c, status.StatusNotLogin, nil)
+		return
+	}
+
+	// 获取图片文件
+	uploadImageIds := imageIds.ImageIds
+	images, code := logic.Download(uploadImageIds, userID)
+	if code != status.StatusSuccess {
+		zap.L().Error("logic.download failed", zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
+		return
+	}
+
+	// 业务处理，下载图片
+	for _, image := range images {
+		// 设置响应头
+		c.Header("Content-Type", image.Type)
+		c.Header("Content-Disposition", "attachment; imagename="+image.ImageName)
+		c.Writer.Write(image.Content)
+	}
+
+	ResponseSuccess(c, nil)
+}
+
+func ShareHandler(c *gin.Context) {
+	// 接收文件id
+	var imageIds models.FormImageIds
+	if err := c.BindJSON(&imageIds); err != nil {
+		zap.L().Error("share with invalid parameters", zap.Error(err))
+		ResponseError(c, status.StatusInvalidParams, nil)
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("log in and share", zap.Error(err))
+		ResponseError(c, status.StatusNotLogin, nil)
+		return
+	}
+
+	// 业务处理，分享图片
+	uploadImageIds := imageIds.ImageIds
+	shareURL, code := logic.Share(uploadImageIds, userID)
+	if code != status.StatusSuccess {
+		zap.L().Error("logic.share failed", zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
+		return
+	}
+
+	ResponseSuccess(c, shareURL)
+}
+
+func SearchHandler(c *gin.Context) {
+	// 接收tags
+	var tags models.FormTags
+	if err := c.BindJSON(&tags); err != nil {
+		zap.L().Error("search with invalid parameters", zap.Error(err))
+		ResponseError(c, status.StatusInvalidParams, nil)
+		return
+	}
+
+	// 获取当前用户ID
+	userID, err := GetCurrentUserID(c)
+	if err != nil {
+		zap.L().Error("log in and search", zap.Error(err))
+		ResponseError(c, status.StatusNotLogin, nil)
+		return
+	}
+
+	// 业务处理，搜索图片
 	uploadTags := tags.Tags
 	images, code := logic.Search(uploadTags, userID)
 	if code != status.StatusSuccess {
-		zap.L().Error("logic.delete failed", zap.Error(errors.New(code.Msg())))
+		zap.L().Error("logic.search failed", zap.Error(errors.New(code.Msg())))
 		ResponseError(c, code, nil)
 		return
 	}
 
 	ResponseSuccess(c, images)
+}
+
+func OpenShareHandler(c *gin.Context) {
+	// 接收token
+	token := c.Param("token")
+
+	// 业务处理，返回被分享的图片
+	sharedImages, code := logic.OpenShare(token)
+	if code != status.StatusSuccess {
+		zap.L().Error("logic.openShare failed", zap.Error(errors.New(code.Msg())))
+		ResponseError(c, code, nil)
+		return
+	}
+
+	ResponseSuccess(c, sharedImages)
 }

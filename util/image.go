@@ -110,21 +110,25 @@ func Delete(imageIds []string, userID int64) status.Code {
 	return status.StatusSuccess
 }
 
-func Edit() status.Code {
-	return status.StatusBusy
+func Edit(image models.ModifyImage, userID int64) (code status.Code) {
+	return status.StatusSuccess
 
 }
 
-func Download() status.Code {
-	return status.StatusBusy
+func Download(imageIds []string, userID int64) (images []models.UploadImage, code status.Code) {
+	return nil, status.StatusSuccess
 
 }
 
-func Share() status.Code {
-	return status.StatusBusy
+func Share(userID int64, imagesIds []string, encodedToken string, expirationTime time.Time) status.Code {
+	return status.StatusSuccess
 
 }
 
 func Search(tags []string, userID int64) (images []models.UploadImage, code status.Code) {
+	return
+}
+
+func OpenShare(token string) (images []models.UploadImage, code status.Code) {
 	return
 }
