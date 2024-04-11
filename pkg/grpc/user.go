@@ -2,25 +2,23 @@ package grpc
 
 import (
 	"Tmage/controller/status"
-	"fmt"
 	"github.com/listenGrey/TmagegRpcPKG/userInfo"
 	"google.golang.org/grpc"
 )
 
 // 定义gRpc客户端服务器的类型码
 
-type Client int64
+type UserClient int64
 
 const (
-	CheckExistence Client = 2000
-	Register       Client = 2001
-	LoginCheck     Client = 2002
+	CheckExistence UserClient = 2000
+	Register       UserClient = 2001
+	LoginCheck     UserClient = 2002
 )
 
-func ClientServer(funcCode Client) (client interface{}) {
+func UserClientServer(funcCode UserClient) (client interface{}) {
 	conn, err := grpc.Dial("localhost:8964", grpc.WithInsecure()) //server IP
 	if err != nil {
-		fmt.Println("cannot connect grpc server")
 		return status.StatusConnGrpcServerERR
 	}
 	switch funcCode {

@@ -26,7 +26,7 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info st
 	var formTags models.FormTags
 	err := json.Unmarshal([]byte(tags[0]), &formTags)
 	if err != nil {
-		return "标签为空", status.StatusNoTag
+		return "", status.StatusBusy
 	}
 	uploadTags := formTags.Tags
 
@@ -74,23 +74,71 @@ func Upload(files []*multipart.FileHeader, tags []string, userID int64) (info st
 	if res != status.StatusSuccess {
 		return "", res
 	}
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "upload",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    res.Msg(),
+		Data:      uploadImages,
+	}
+	util.OperationLog(*operationInfo)
+
 	success = len(uploadImages)
 	failed = total - success
 	return fmt.Sprintf("总共上传%d张图片，%d张成功，%d张失败", total, success, failed), status.StatusSuccess
 }
 
 func Delete(imageIds []string, userID int64) (code status.Code) {
-	code = util.Delete(imageIds, userID)
+	now := time.Now()
+	code = util.Delete(imageIds, userID, now.Format("2006-01-02 15:04:05"))
+
+	// 发送日志信息
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "delete",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      imageIds,
+	}
+	util.OperationLog(*operationInfo)
+
 	return
 }
 
 func Edit(image models.ModifyImage, userID int64) (code status.Code) {
-	code = util.Edit(image, userID)
+	now := time.Now()
+	code = util.Edit(image, userID, now.Format("2006-01-02 15:04:05"))
+
+	// 发送日志信息
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "edit",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      image,
+	}
+	util.OperationLog(*operationInfo)
+
 	return
 }
 
 func Download(imageIds []string, userID int64) (images []models.UploadImage, code status.Code) {
 	images, code = util.Download(imageIds, userID)
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "download",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      images,
+	}
+	util.OperationLog(*operationInfo)
+
 	return
 }
 
@@ -104,15 +152,34 @@ func Share(imageIds []string, userID int64) (url string, code status.Code) {
 	encodedToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
 	// 分享链接到期时间：14天
-	expirationTime := time.Now().Add(14 * 24 * time.Hour)
+	now := time.Now()
+	expirationTime := now.Add(14 * 24 * time.Hour)
 
-	code = util.Share(userID, imageIds, encodedToken, expirationTime)
+	shareImage := &models.ShareImage{
+		UserID:         userID,
+		ImagesIds:      imageIds,
+		Token:          encodedToken,
+		ShareTime:      now.Format("2006-01-02 15:04:05"),
+		ExpirationTime: expirationTime.Format("2006-01-02 15:04:05"),
+	}
+
+	code = util.Share(*shareImage)
 	if code != status.StatusSuccess {
 		return "", code
 	}
 
 	// 构建 URL
-	url = fmt.Sprintf("https://tmage.com/share/%s", encodedToken)
+	url = fmt.Sprintf("https://tmage.org/share/%s", encodedToken)
+
+	// 发送日志信息
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "share",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      imageIds,
+	}
+	util.OperationLog(*operationInfo)
 
 	return url, status.StatusSuccess
 }
@@ -122,6 +189,18 @@ func Search(tags []string, userID int64) (images []models.UploadImage, code stat
 	if code != status.StatusSuccess {
 		return nil, code
 	}
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "search",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      images,
+	}
+	util.OperationLog(*operationInfo)
+
 	return
 }
 
@@ -130,5 +209,17 @@ func OpenShare(token string) (images []models.UploadImage, code status.Code) {
 	if code != status.StatusSuccess {
 		return nil, code
 	}
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    0,
+		Operation: "openShare",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    code.Msg(),
+		Data:      token,
+	}
+	util.OperationLog(*operationInfo)
+
 	return
 }

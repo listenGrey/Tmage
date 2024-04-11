@@ -4,32 +4,39 @@ import (
 	"Tmage/controller/status"
 	"Tmage/models"
 	"Tmage/pkg/grpc"
-	"fmt"
 	"github.com/listenGrey/TmagegRpcPKG/userInfo"
 
 	"context"
 )
 
 func CheckExistence(email string) status.Code {
-	client := grpc.ClientServer(grpc.CheckExistence)
+	client := grpc.UserClientServer(grpc.CheckExistence)
 	if client == status.StatusConnGrpcServerERR {
 		return status.StatusConnGrpcServerERR
 	}
 	sendEmail := &userInfo.RegisterEmail{Email: email}
 	res, err := client.(userInfo.CheckExistenceClient).RegisterCheck(context.Background(), sendEmail)
 	if err != nil {
-		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
 		return status.StatusRecvGrpcSerInfoERR
 	}
-	if exist := res.Exsit; exist {
-		return status.StatusUserExist
-	} else {
-		return status.StatusSuccess
+	exist := res.Exist
+	info := res.Info
+
+	if info == status.StatusConnDBERR.Code() {
+		return status.StatusConnDBERR
+	} else if info == status.StatusBusy.Code() {
+		return status.StatusBusy
 	}
+
+	if exist {
+		return status.StatusUserExist
+	}
+
+	return status.StatusSuccess
 }
 
 func Register(user *models.User) status.Code {
-	client := grpc.ClientServer(grpc.Register)
+	client := grpc.UserClientServer(grpc.Register)
 	if client == status.StatusConnGrpcServerERR {
 		return status.StatusConnGrpcServerERR
 	}
@@ -41,18 +48,27 @@ func Register(user *models.User) status.Code {
 	}
 	res, err := client.(userInfo.RegisterInfoClient).Register(context.Background(), sendUser)
 	if err != nil {
-		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
 		return status.StatusRecvGrpcSerInfoERR
 	}
-	if sta := res.Success; sta {
-		return status.StatusSuccess
-	} else {
+
+	sta := res.Success
+	info := res.Info
+
+	if info == status.StatusConnDBERR.Code() {
+		return status.StatusConnDBERR
+	} else if info == status.StatusBusy.Code() {
+		return status.StatusBusy
+	}
+
+	if !sta {
 		return status.StatusRegisterERR
 	}
+
+	return status.StatusSuccess
 }
 
 func LoginCheck(user *models.User) (code status.Code, userID int64) {
-	client := grpc.ClientServer(grpc.LoginCheck)
+	client := grpc.UserClientServer(grpc.LoginCheck)
 	if client == status.StatusConnGrpcServerERR {
 		return status.StatusConnGrpcServerERR, 0
 	}
@@ -62,18 +78,19 @@ func LoginCheck(user *models.User) (code status.Code, userID int64) {
 	}
 	res, err := client.(userInfo.LoginCheckClient).LoginCheck(context.Background(), sendUser)
 	if err != nil {
-		fmt.Printf("Failed to receive info from gRpc server; %v\n", err)
 		return status.StatusRecvGrpcSerInfoERR, 0
 	}
 	sta := res.Info
 	userID = res.UserID
-	if sta == int64(status.StatusSuccess) {
-		return status.StatusSuccess, userID
-	} else if sta == int64(status.StatusUserNotExist) {
+	if sta == status.StatusConnDBERR.Code() {
+		return status.StatusConnDBERR, 0
+	} else if sta == status.StatusUserNotExist.Code() {
 		return status.StatusUserNotExist, 0
-	} else if sta == int64(status.StatusInvalidPwd) {
+	} else if sta == status.StatusInvalidPwd.Code() {
 		return status.StatusInvalidPwd, 0
-	} else {
+	} else if sta == status.StatusBusy.Code() {
 		return status.StatusBusy, 0
 	}
+
+	return status.StatusSuccess, userID
 }

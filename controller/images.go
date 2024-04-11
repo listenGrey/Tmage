@@ -37,7 +37,7 @@ func UploadHandler(c *gin.Context) {
 	info, code := logic.Upload(files, tags, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.upload failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 	ResponseSuccess(c, info)
@@ -65,7 +65,7 @@ func DeleteHandler(c *gin.Context) {
 	code := logic.Delete(uploadImageIds, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.delete failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -93,7 +93,7 @@ func EditHandler(c *gin.Context) {
 	code := logic.Edit(image, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.edit failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -122,7 +122,7 @@ func DownloadHandler(c *gin.Context) {
 	images, code := logic.Download(uploadImageIds, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.download failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -159,7 +159,7 @@ func ShareHandler(c *gin.Context) {
 	shareURL, code := logic.Share(uploadImageIds, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.share failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -188,7 +188,7 @@ func SearchHandler(c *gin.Context) {
 	images, code := logic.Search(uploadTags, userID)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.search failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -203,7 +203,10 @@ func OpenShareHandler(c *gin.Context) {
 	sharedImages, code := logic.OpenShare(token)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.openShare failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		if code == status.StatusShareInvalid {
+			ResponseError(c, status.StatusShareInvalid, nil)
+		}
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 

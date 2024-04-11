@@ -11,7 +11,6 @@ import (
 // 基于 JWT 的认证中间件
 func JWTAuthMiddleWare() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		// Token的方式 1.放在请求头 2.放在请求体 3.放在URI
 		// Token放在Header的Authorization中，使用Bearer开头
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
@@ -36,6 +35,6 @@ func JWTAuthMiddleWare() func(c *gin.Context) {
 		// 将user信息保存到context中
 		c.Set(controller.ContextUserIDKey, user.UserID)
 		c.Next()
-		// 后续的处理函数可以用过c.Get(ContextUserIDKey)来获取当前请求的用户信息
+		// 后续的处理函数可以用过GetCurrentUserID(c)来获取当前请求的用户信息
 	}
 }

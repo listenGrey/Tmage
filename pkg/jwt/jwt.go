@@ -7,29 +7,33 @@ import (
 )
 
 type Claims struct {
-	UserID int64 `json:"user_id"`
-	STD    jwt.StandardClaims
+	UserID   int64  `json:"user_id"`
+	UserName string `json:"user_name"`
+	STD      jwt.StandardClaims
 }
 
 func (c Claims) Valid() error {
-	//TODO implement me
-	panic("implement me")
+	if !c.STD.VerifyExpiresAt(time.Now().Unix(), true) {
+		return errors.New("token is expired")
+	}
+	return nil
 }
 
 // secret
-var secret = []byte("你知道我想说什么")
+var secret = []byte("well")
 
 func keyGen(_ *jwt.Token) (key interface{}, err error) {
 	return secret, nil
 }
 
 // 定义JWT的过期时间
-const ShortTokenExpireDuration = time.Minute * 30
+const ShortTokenExpireDuration = time.Hour * 24
 const LongTokenExpireDuration = time.Hour * 24 * 15
 
-func GenToken(userID int64) (aToken, rToken string, err error) {
+func GenToken(userID int64, userName string) (aToken, rToken string, err error) {
 	claim := Claims{
-		UserID: userID,
+		UserID:   userID,
+		UserName: userName,
 		STD: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(ShortTokenExpireDuration).Unix(),
 			Issuer:    "listenGrey",
@@ -54,6 +58,7 @@ func ParseToken(oriToken string) (claim *Claims, err error) {
 	}
 	if !token.Valid {
 		err = errors.New("invalid token")
+		return
 	}
 	return
 }
@@ -69,7 +74,8 @@ func RefreshToken(aToken, rToken string) (newAToken, newRToken string, err error
 	v, _ := err.(*jwt.ValidationError)
 
 	if v.Errors == jwt.ValidationErrorExpired {
-		return GenToken(claims.UserID)
+		return GenToken(claims.UserID, claims.UserName)
 	}
+
 	return
 }

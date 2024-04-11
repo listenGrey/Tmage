@@ -22,3 +22,11 @@ type ModifyImage struct {
 	UserID int64    `json:"user_id"`
 	Tags   []string `json:"tags"`
 }
+
+type ShareImage struct {
+	UserID         int64    `json:"user_id"`
+	ImagesIds      []string `json:"images_ids"`
+	Token          string   `json:"encoded_token"`
+	ShareTime      string   `json:"share_time"`
+	ExpirationTime string   `json:"expiration_time"`
+}

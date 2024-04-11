@@ -8,6 +8,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"github.com/bwmarrin/snowflake"
+	"time"
 )
 
 func encryptPwd(pwdByte []byte) (res string) {
@@ -39,11 +40,23 @@ func Register(client *models.RegisterFrom) status.Code {
 		Password: userPwd,
 	}
 
-	// 3. call a grpc client, send user info
+	// 3. 发送用户信息
 	res := util.Register(user)
 	if res != status.StatusSuccess {
 		return res
 	}
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    userId.Int64(),
+		Operation: "register",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    res.Msg(),
+		Data:      user,
+	}
+	util.OperationLog(*operationInfo)
+
 	return status.StatusSuccess
 }
 
@@ -65,11 +78,23 @@ func Login(form *models.LoginForm) (user *models.User, code status.Code) {
 	user.UserID = userID
 
 	// 生成JWT
-	aToken, rToken, err := jwt.GenToken(user.UserID)
+	aToken, rToken, err := jwt.GenToken(user.UserID, user.UserName)
 	if err != nil {
 		return nil, status.StatusBusy
 	}
 	user.AccessToken = aToken
 	user.RefreshToken = rToken
+
+	// 发送日志信息
+	now := time.Now()
+	operationInfo := &models.OperationInfo{
+		UserID:    userID,
+		Operation: "login",
+		Time:      now.Format("2006-01-02 15:04:05"),
+		Status:    info.Msg(),
+		Data:      user,
+	}
+	util.OperationLog(*operationInfo)
+
 	return user, status.StatusSuccess
 }

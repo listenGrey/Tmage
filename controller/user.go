@@ -32,7 +32,10 @@ func RegisterHandler(c *gin.Context) {
 	// 用户注册
 	if code := logic.Register(client); code != status.StatusSuccess {
 		zap.L().Error("logic.Register failed", zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		if code == status.StatusUserExist {
+			ResponseError(c, status.StatusUserExist, nil)
+		}
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -57,7 +60,10 @@ func LoginHandler(c *gin.Context) {
 	curUser, code := logic.Login(user)
 	if code != status.StatusSuccess {
 		zap.L().Error("logic.login failed", zap.String("user", user.Email), zap.Error(errors.New(code.Msg())))
-		ResponseError(c, code, nil)
+		if code == status.StatusUserNotExist || code == status.StatusInvalidPwd {
+			ResponseError(c, code, nil)
+		}
+		ResponseError(c, status.StatusBusy, nil)
 		return
 	}
 
@@ -88,6 +94,12 @@ func RefreshTokenHandler(c *gin.Context) {
 	}
 	aToken, rToken, err := jwt.RefreshToken(parts[1], rt)
 	zap.L().Error("jwt.RefreshToken failed", zap.Error(err))
+	if err != nil {
+		ResponseError(c, status.StatusInvalidToken, "刷新Token错误")
+		c.Abort()
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  aToken,
 		"refresh_token": rToken,
